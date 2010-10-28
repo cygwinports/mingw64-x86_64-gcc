@@ -1,0 +1,53 @@
+TOOLCHAIN_TARGET="x86_64-w64-mingw32"
+inherit toolchain
+
+DESCRIPTION="GCC for MinGW-w64 Win64 toolchain"
+HOMEPAGE="http://mingw-w64.sourceforge.net/"
+
+case ${#PV[3]} in
+8)	snapshot_v="${PV[1]}.${PV[2]}-${PV[3]}"
+	SRC_URI="mirror://gcc/snapshots/${snapshot_v}/gcc-core-${snapshot_v}.tar.bz2
+		mirror://gcc/snapshots/${snapshot_v}/gcc-fortran-${snapshot_v}.tar.bz2
+		mirror://gcc/snapshots/${snapshot_v}/gcc-g++-${snapshot_v}.tar.bz2
+		mirror://gcc/snapshots/${snapshot_v}/gcc-objc-${snapshot_v}.tar.bz2"
+	SRC_DIR="gcc-${snapshot_v}"
+	;;
+*)	SRC_URI="mirror://gnu/gcc/gcc-${PV}/gcc-core-${PV}.tar.bz2
+		mirror://gnu/gcc/gcc-${PV}/gcc-fortran-${PV}.tar.bz2
+		mirror://gnu/gcc/gcc-${PV}/gcc-g++-${PV}.tar.bz2
+		mirror://gnu/gcc/gcc-${PV}/gcc-objc-${PV}.tar.bz2"
+	SRC_DIR="gcc-${PV}"
+	;;
+esac
+
+PATCH_URI="config-rpath.patch"
+
+CYGCONF_ARGS="
+	--disable-multilib
+	--disable-win32-registry
+	--enable-languages=c,c++,fortran,objc,obj-c++
+	--enable-fully-dynamic-strings
+	--enable-libgomp
+	--enable-sjlj-exceptions
+	--enable-version-specific-runtime-libs
+	--with-dwarf2
+	--with-system-zlib
+"
+
+src_install() {
+	cd ${B}
+	cyginstall -j1
+
+	# Remove Cygwin-host libiberty.a
+	rm -f ${D}/usr/lib/libiberty.a
+
+	# Workaround GCC install bug
+	mv ${D}/usr/lib/gcc/${TOOLCHAIN_TARGET}/lib64/libgcc_s.a ${D}/usr/lib/gcc/${TOOLCHAIN_TARGET}/${PV[1]}.*/
+#	mv ${D}/usr/lib/gcc/${TOOLCHAIN_TARGET}/lib32/libgcc_s.a ${D}/usr/lib/gcc/${TOOLCHAIN_TARGET}/4.*/32/
+
+	dodir /usr/${TOOLCHAIN_TARGET}/sys-root/mingw/bin
+	mv $(find ${D}/ -name 'libgcc_s*.dll') ${D}/usr/${TOOLCHAIN_TARGET}/sys-root/mingw/bin
+
+	# conflicts with native gcc
+	rm -fr ${D}/usr/share/{gcc-*,info,locale,man/man7}
+}
