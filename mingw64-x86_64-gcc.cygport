@@ -1,0 +1,113 @@
+TOOLCHAIN_TARGET="x86_64-w64-mingw32"
+inherit toolchain
+
+NAME="mingw64-x86_64-gcc"
+VERSION=4.8-20130310
+RELEASE=1
+CATEGORY="Devel"
+SUMMARY="GCC for Win64 toolchain"
+DESCRIPTION="The GNU Compiler Collection includes front ends for C, C++,
+Objective-C, Fortran, Java, and Ada, as well as libraries for these languages
+(libstdc++, libgcj,...)."
+HOMEPAGE="http://mingw-w64.sourceforge.net/"
+case ${VERSION} in
+*.*-20[1-9][0-9][0-1][0-9][0-3][0-9])
+	SRC_URI="mirror://gcc/snapshots/${VERSION}/gcc-${VERSION}.tar.bz2" ;;
+*)	SRC_URI="mirror://gnu/gcc/gcc-${VERSION}/gcc-${VERSION}.tar.bz2" ;;
+esac
+SRC_DIR="gcc-${VERSION}"
+
+PATCH_URI="
+	4.8-cygwin64-host.patch
+	4.8-libgcj-soname.patch
+"
+
+PKG_NAMES="${NAME}-core ${NAME}-g++ ${NAME}-fortran"
+mingw64_x86_64_gcc_core_SUMMARY="${SUMMARY} (C, OpenMP)"
+mingw64_x86_64_gcc_core_REQUIRES="mingw64-x86_64-binutils mingw64-x86_64-pthreads mingw64-x86_64-runtime"
+mingw64_x86_64_gcc_core_CONTENTS="
+	--exclude=c++ --exclude=objc --exclude=gcj --exclude=jni*.h
+	usr/bin/${TOOLCHAIN_TARGET}-cpp.exe
+	usr/bin/${TOOLCHAIN_TARGET}-gcc.exe
+	usr/bin/${TOOLCHAIN_TARGET}-gcc-*.exe
+	usr/bin/${TOOLCHAIN_TARGET}-gcov.exe
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/cc1.exe
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/collect2.exe
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/crt*.o
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/cyglto_plugin-0.dll
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/include-fixed/
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/include/
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/install-tools/
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/libgcc*
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/libgcov.*
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/libgomp.*
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/libquadmath.*
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/libssp*
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/lto*.exe
+	usr/share/doc/
+	usr/share/man/man1/${TOOLCHAIN_TARGET}-cpp.1*
+	usr/share/man/man1/${TOOLCHAIN_TARGET}-gcc.1*
+	usr/share/man/man1/${TOOLCHAIN_TARGET}-gcov.1*
+	${TOOLCHAIN_SYSROOT#/}/mingw/bin/libgcc_s_seh-1.dll
+	${TOOLCHAIN_SYSROOT#/}/mingw/bin/libgomp-1.dll
+	${TOOLCHAIN_SYSROOT#/}/mingw/bin/libquadmath-0.dll
+	${TOOLCHAIN_SYSROOT#/}/mingw/bin/libssp-0.dll
+"
+mingw64_x86_64_gcc_g___SUMMARY="${SUMMARY} (C++)"
+mingw64_x86_64_gcc_g___CONTENTS="
+	--exclude=gcj --exclude=gnu --exclude=java --exclude=javax --exclude=org
+	usr/bin/${TOOLCHAIN_TARGET}-c++.exe
+	usr/bin/${TOOLCHAIN_TARGET}-g++.exe
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/cc1plus.exe
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/include/c++/
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/libstdc++.*
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/libsupc++.*
+	usr/share/man/man1/${TOOLCHAIN_TARGET}-g++.1*
+	${TOOLCHAIN_SYSROOT#/}/mingw/bin/libstdc++-6.dll
+"
+mingw64_x86_64_gcc_fortran_SUMMARY="${SUMMARY} (Fortran)"
+mingw64_x86_64_gcc_fortran_CONTENTS="
+	usr/bin/${TOOLCHAIN_TARGET}-gfortran.exe
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/f951.exe
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/finclude/
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/libcaf_single.*
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/libgfortran*
+	usr/share/man/man1/${TOOLCHAIN_TARGET}-gfortran.1*
+	${TOOLCHAIN_SYSROOT#/}/mingw/bin/libgfortran-3.dll
+"
+
+CYGCONF_ARGS="
+	--disable-multilib
+	--disable-win32-registry
+	--enable-languages=c,c++,fortran,lto
+	--enable-fully-dynamic-strings
+	--enable-graphite
+	--enable-libgomp
+	--enable-libquadmath
+	--enable-libquadmath-support
+	--enable-libssp
+	--enable-version-specific-runtime-libs
+	--with-dwarf2
+	--with-gnu-ld --with-gnu-as
+	--with-tune=generic
+	--with-cloog-include=/usr/include/cloog-isl
+	--with-system-zlib
+"
+
+src_install() {
+	cd ${B}
+	cyginstall -j1
+
+	# Remove Cygwin-host libiberty.a
+	rm -f ${D}/usr/lib/libiberty.a
+
+	# Workaround GCC install bug
+	mv ${D}/usr/lib/gcc/${TOOLCHAIN_TARGET}/lib/libgcc_s.a ${D}/usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/
+#	mv ${D}/usr/lib/gcc/${TOOLCHAIN_TARGET}/lib32/libgcc_s.a ${D}/usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/32/
+
+	dodir ${TOOLCHAIN_SYSROOT}/mingw/bin
+	mv $(find ${D}/ -name 'libgcc_s*.dll') ${D}${TOOLCHAIN_SYSROOT}/mingw/bin
+
+	# conflicts with native gcc
+	rm -fr ${D}/usr/share/{gcc-*,info,locale,man/man7}
+}
