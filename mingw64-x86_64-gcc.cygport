@@ -2,7 +2,7 @@ TOOLCHAIN_TARGET="x86_64-w64-mingw32"
 inherit toolchain
 
 NAME="mingw64-x86_64-gcc"
-VERSION=4.8-20130310
+VERSION=4.8.0
 RELEASE=1
 CATEGORY="Devel"
 SUMMARY="GCC for Win64 toolchain"
@@ -18,8 +18,13 @@ esac
 SRC_DIR="gcc-${VERSION}"
 
 PATCH_URI="
+	http://pkgs.fedoraproject.org/cgit/mingw-gcc.git/plain/gcc-make-xmmintrin-header-cplusplus-compatible.patch?h=f19
+	http://pkgs.fedoraproject.org/cgit/mingw-gcc.git/plain/gcc-bug-56742-seh-uncaught-throw.patch?h=f19
 	4.8-cygwin64-host.patch
+	4.8-libdecnumber-cygwin64.patch
+	4.7-libffi-noinst.patch
 	4.8-libgcj-soname.patch
+	4.8-lto-plugin-soname.patch
 "
 
 PKG_NAMES="${NAME}-core ${NAME}-g++ ${NAME}-fortran"
@@ -34,7 +39,7 @@ mingw64_x86_64_gcc_core_CONTENTS="
 	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/cc1.exe
 	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/collect2.exe
 	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/crt*.o
-	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/cyglto_plugin-0.dll
+	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/cyglto_plugin.dll
 	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/include-fixed/
 	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/include/
 	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/install-tools/
@@ -55,7 +60,7 @@ mingw64_x86_64_gcc_core_CONTENTS="
 "
 mingw64_x86_64_gcc_g___SUMMARY="${SUMMARY} (C++)"
 mingw64_x86_64_gcc_g___CONTENTS="
-	--exclude=gcj --exclude=gnu --exclude=java --exclude=javax --exclude=org
+	--exclude=gcj --exclude=gnu --exclude=java --exclude=javax --exclude=org --exclude=sun
 	usr/bin/${TOOLCHAIN_TARGET}-c++.exe
 	usr/bin/${TOOLCHAIN_TARGET}-g++.exe
 	usr/lib/gcc/${TOOLCHAIN_TARGET}/${VERSION/-*/.*}/cc1plus.exe
