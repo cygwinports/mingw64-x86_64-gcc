@@ -2,7 +2,7 @@ TOOLCHAIN_TARGET="x86_64-w64-mingw32"
 inherit toolchain
 
 NAME="mingw64-x86_64-gcc"
-VERSION=4.8.0
+VERSION=4.8.1
 RELEASE=1
 CATEGORY="Devel"
 SUMMARY="GCC for Win64 toolchain"
@@ -25,6 +25,7 @@ PATCH_URI="
 	4.7-libffi-noinst.patch
 	4.8-libgcj-soname.patch
 	4.8-lto-plugin-soname.patch
+	4.8-pr56742.patch
 "
 
 PKG_NAMES="${NAME}-core ${NAME}-g++ ${NAME}-fortran"
